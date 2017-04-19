@@ -93,6 +93,7 @@ type entry struct {
 	Value      string
 	Domain     string
 	Path       string
+	SameSite   string
 	Secure     bool
 	HttpOnly   bool
 	Persistent bool
@@ -414,6 +415,7 @@ func (j *Jar) newEntry(c *http.Cookie, now time.Time, defPath, host string) (e e
 	e.Value = c.Value
 	e.Secure = c.Secure
 	e.HttpOnly = c.HttpOnly
+	e.SameSite = c.SameSite
 
 	return e, false, nil
 }

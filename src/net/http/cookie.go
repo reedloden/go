@@ -32,9 +32,24 @@ type Cookie struct {
 	MaxAge   int
 	Secure   bool
 	HttpOnly bool
+	SameSite int
 	Raw      string
 	Unparsed []string // Raw text of unparsed attribute-value pairs
 }
+
+// SameSite allows a server define a cookie attribute making it impossible to
+// the browser send this cookie along with cross-site requests. The main goal
+// is mitigate the risk of cross-origin information leakage, and provides some
+// protection against cross-site request forgery attacks.
+//
+// See https://tools.ietf.org/html/draft-ietf-httpbis-cookie-same-site-00 for details.
+type SameSiteType int
+
+const (
+    SAMESITE_DEFAULT_MODE SameSiteType = itoa + 1
+    SAMESITE_LAX_MODE
+    SAMESITE_STRICT_MODE
+)
 
 // readSetCookies parses all "Set-Cookie" values from
 // the header h and returns the successfully parsed Cookies.
@@ -84,6 +99,17 @@ func readSetCookies(h Header) []*Cookie {
 				continue
 			}
 			switch lowerAttr {
+			case "samesite":
+				lowerVal := strings.ToLower(val)
+				switch lowerVal {
+				case "lax":
+					c.SameSite = SAMESITE_LAX_MODE
+				case "strict":
+					c.SameSite = SAMESITE_STRICT_MODE
+				default:
+					c.SameSite = SAMESITE_DEFAULT_MODE
+				}
+				continue
 			case "secure":
 				c.Secure = true
 				continue
@@ -187,6 +213,17 @@ func (c *Cookie) String() string {
 	}
 	if c.Secure {
 		b.WriteString("; Secure")
+	}
+	if c.SameSite > 0 {
+		b.WriteString("; SameSite")
+		if c.SameSite != SAMESITE_DEFAULT_MODE {
+			b.WriteString("=")
+			if c.SameSite == SAMESITE_LAX_MODE {
+				b.WriteString("Lax")
+			} else if c.SameSite == SAMESITE_STRICT_MODE {
+				b.WriteString("Strict")
+			}
+		}
 	}
 	return b.String()
 }
